@@ -1,0 +1,783 @@
+import { useState } from "react";
+
+const slides = [
+  {
+    id: 0,
+    type: "title",
+    label: "Title",
+    title: "Getting Started with Claude Code",
+    subtitle: "A hands-on workshop",
+    meta: "90 minutes \u00B7 Build something real today",
+  },
+  {
+    id: 1,
+    type: "agenda",
+    label: "Agenda",
+    title: "Today's Plan",
+    items: [
+      { time: "0:00 - 0:05", label: "Intro & Goals", icon: "\uD83D\uDC4B" },
+      { time: "0:05 - 0:10", label: "What is Claude Code?", icon: "\uD83E\uDD16" },
+      { time: "0:10 - 0:18", label: "Core Concepts", icon: "\uD83E\uDDE0" },
+      { time: "0:18 - 0:25", label: "Install & First Run", icon: "\u26A1" },
+      { time: "0:25 - 0:30", label: "Live Demo", icon: "\uD83C\uDFAC" },
+      { time: "0:30 - 1:30", label: "Hands-On Build Time", icon: "\uD83D\uDEE0\uFE0F", highlight: true },
+    ],
+  },
+  {
+    id: 2,
+    type: "what",
+    label: "What is it?",
+    title: "What is Claude Code?",
+    bullets: [
+      { icon: "\uD83D\uDCBB", text: "An agentic coding tool that lives in your terminal" },
+      { icon: "\uD83D\uDD01", text: "Claude reads, edits, runs, and debugs your code autonomously" },
+      { icon: "\uD83D\uDCC1", text: "It understands your entire project — not just one file" },
+      { icon: "\uD83E\uDDE9", text: "Works with any language, framework, or existing codebase" },
+      { icon: "\uD83D\uDD27", text: "Can use tools: bash, file system, web search, and more" },
+    ],
+    note: "Think of it as a senior engineer pair-programming in your terminal.",
+  },
+  {
+    id: 3,
+    type: "concept",
+    label: "Plan Mode",
+    title: "Plan Mode",
+    icon: "\uD83D\uDCCB",
+    tagline: "Think before you build.",
+    description: "Before Claude writes a single line of code, Plan Mode lets it map out a full approach for your approval.",
+    points: [
+      { title: "How to trigger it", body: "Say \"think step by step\", \"make a plan\", or press Shift+Tab to toggle plan mode" },
+      { title: "What you get", body: "A structured breakdown of files to create, edit, and the order of operations" },
+      { title: "Why it matters", body: "Catching a bad approach before 200 lines are written saves everyone pain" },
+      { title: "You stay in control", body: "Review and approve the plan before Claude executes anything" },
+    ],
+    tip: "\uD83D\uDCA1 Use Plan Mode for anything non-trivial. It's free to plan.",
+  },
+  {
+    id: 4,
+    type: "concept",
+    label: "Context",
+    title: "Context is Everything",
+    icon: "\uD83E\uDDE0",
+    tagline: "Claude is only as good as what it knows.",
+    description: "Claude Code reads your codebase to build a picture of your project. You control how much it sees.",
+    points: [
+      { title: "CLAUDE.md", body: "A markdown file in your repo root — Claude always reads this first. Put your stack, conventions, and gotchas here." },
+      { title: "@ mentions", body: "Reference specific files or folders: \"@src/auth.ts add rate limiting\"" },
+      { title: "/context", body: "Use the /context command to see what Claude currently knows and trim if needed" },
+      { title: "Context window limits", body: "Longer sessions = more tokens used. Summarize or start fresh sessions for new tasks." },
+    ],
+    tip: "\uD83D\uDCA1 A great CLAUDE.md is like onboarding docs for your AI teammate.",
+  },
+  {
+    id: 5,
+    type: "concept",
+    label: "Subagents",
+    title: "Subagents",
+    icon: "\uD83E\uDD1D",
+    tagline: "Claude can delegate to itself.",
+    description: "For complex tasks, Claude Code spawns subagents — specialized instances that handle parallel workstreams.",
+    points: [
+      { title: "What they do", body: "A subagent takes a specific sub-task (e.g. write tests, update docs, refactor a module) and runs it independently" },
+      { title: "When they appear", body: "Automatically on large tasks, or you can ask: \"do this in parallel\"" },
+      { title: "Coordination", body: "The parent agent orchestrates results — you see one coherent output" },
+      { title: "Why it's powerful", body: "A task that would take 10 sequential steps can be parallelized dramatically" },
+    ],
+    tip: "\uD83D\uDCA1 Subagents shine when you say: \"Build the frontend and backend at the same time.\"",
+  },
+  {
+    id: 6,
+    type: "concept",
+    label: "Skills & Tools",
+    title: "Skills & Built-in Tools",
+    icon: "\uD83D\uDD27",
+    tagline: "Claude Code isn't just a chatbot — it acts.",
+    description: "Claude has built-in skills it uses automatically based on your request.",
+    points: [
+      { title: "File R/W", body: "Read, create, and edit any file in your project" },
+      { title: "Bash / Terminal", body: "Run commands, scripts, installs, tests" },
+      { title: "Web Search", body: "Look up docs, packages, or error messages" },
+      { title: "Test Runner", body: "Run your test suite and fix failing tests" },
+    ],
+    grid: [
+      { icon: "\uD83D\uDCC2", label: "File R/W", desc: "Read, create, and edit any file in your project" },
+      { icon: "\uD83D\uDDA5\uFE0F", label: "Bash / Terminal", desc: "Run commands, scripts, installs, tests" },
+      { icon: "\uD83D\uDD0D", label: "Web Search", desc: "Look up docs, packages, or error messages" },
+      { icon: "\uD83E\uDDEA", label: "Test Runner", desc: "Run your test suite and fix failing tests" },
+      { icon: "\uD83C\uDF10", label: "Browser", desc: "Open and interact with web pages (where enabled)" },
+      { icon: "\uD83D\uDD0C", label: "MCP Servers", desc: "Connect to external tools: GitHub, Jira, DBs, APIs" },
+    ],
+    tip: "\uD83D\uDCA1 You can add your own tools via MCP (Model Context Protocol).",
+  },
+  {
+    id: 7,
+    type: "tips",
+    label: "Pro Tips",
+    title: "Prompting Claude Code Well",
+    tips: [
+      { icon: "\uD83C\uDFAF", title: "Be specific about outcomes", body: "Not \"fix this\" — \"add input validation to the email field and show an inline error\"" },
+      { icon: "\uD83D\uDCCB", title: "Use Plan Mode on big tasks", body: "Always review the plan before saying go" },
+      { icon: "\uD83D\uDD17", title: "@ reference the right files", body: "Helps Claude zero in without scanning everything" },
+      { icon: "\uD83E\uDDF9", title: "Keep sessions focused", body: "One task per session keeps context clean and outputs sharp" },
+      { icon: "\uD83D\uDEAB", title: "Use /reject freely", body: "Don't like a change? Reject it. Claude will try a different approach" },
+      { icon: "\uD83D\uDCDD", title: "Invest in your CLAUDE.md", body: "10 minutes of setup saves hours across every future session" },
+    ],
+  },
+  {
+    id: 8,
+    type: "install",
+    label: "Install",
+    title: "Get Up & Running",
+    steps: [
+      { step: "1", label: "Install Claude Code", code: "npm install -g @anthropic-ai/claude-code" },
+      { step: "2", label: "Navigate to your project", code: "cd my-project" },
+      { step: "3", label: "Start Claude Code", code: "claude" },
+      { step: "4", label: "Authenticate", body: "Follow the prompt to log in with your Anthropic account" },
+      { step: "5", label: "Create a CLAUDE.md (optional but recommended)", code: "claude \"create a CLAUDE.md for this project\"" },
+    ],
+    note: "Requires Node 18+ and an Anthropic account.",
+  },
+  {
+    id: 9,
+    type: "buildtime",
+    label: "Build Time",
+    title: "\uD83D\uDEE0\uFE0F Your 60 Minutes Starts Now",
+    prompt: "Build something you actually want to exist.",
+    ideas: [
+      "A CLI tool for a repetitive task you do",
+      "A small web app or dashboard",
+      "An automation script or workflow",
+      "Add a feature to a project you already have",
+      "A personal API or backend service",
+    ],
+    tips: [
+      "Start with a plan — describe your project and ask Claude to plan it first",
+      "Use CLAUDE.md to set context early",
+      "Don't be afraid to reject and retry",
+      "Ask for help from facilitators anytime",
+    ],
+  },
+];
+
+const ACCENT = "#D97706";
+const BG = "#0F172A";
+const CARD = "#1E293B";
+const BORDER = "#334155";
+const TEXT = "#F1F5F9";
+const MUTED = "#94A3B8";
+
+export default function Slides() {
+  const [cur, setCur] = useState(0);
+  const slide = slides[cur];
+  const total = slides.length;
+
+  const go = (d) => setCur((c) => Math.max(0, Math.min(total - 1, c + d)));
+
+  return (
+    <div
+      style={{
+        background: BG,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "'Segoe UI', sans-serif",
+        padding: "24px 16px",
+      }}
+    >
+      {/* Nav dots */}
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          marginBottom: 20,
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        {slides.map((s, i) => (
+          <button
+            key={i}
+            onClick={() => setCur(i)}
+            style={{
+              background: i === cur ? ACCENT : BORDER,
+              border: "none",
+              borderRadius: 12,
+              padding: "4px 10px",
+              cursor: "pointer",
+              color: i === cur ? "#fff" : MUTED,
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Slide */}
+      <div
+        style={{
+          background: CARD,
+          border: `1px solid ${BORDER}`,
+          borderRadius: 16,
+          width: "100%",
+          maxWidth: 780,
+          minHeight: 480,
+          padding: "40px 48px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          boxShadow: "0 4px 32px rgba(0,0,0,0.4)",
+        }}
+      >
+        <SlideContent slide={slide} />
+      </div>
+
+      {/* Controls */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 24,
+          marginTop: 20,
+        }}
+      >
+        <button
+          onClick={() => go(-1)}
+          disabled={cur === 0}
+          style={{
+            background: cur === 0 ? BORDER : ACCENT,
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 24px",
+            color: "#fff",
+            cursor: cur === 0 ? "default" : "pointer",
+            fontWeight: 700,
+            opacity: cur === 0 ? 0.4 : 1,
+          }}
+        >
+          ← Prev
+        </button>
+        <span style={{ color: MUTED, fontSize: 13 }}>
+          {cur + 1} / {total}
+        </span>
+        <button
+          onClick={() => go(1)}
+          disabled={cur === total - 1}
+          style={{
+            background: cur === total - 1 ? BORDER : ACCENT,
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 24px",
+            color: "#fff",
+            cursor: cur === total - 1 ? "default" : "pointer",
+            fontWeight: 700,
+            opacity: cur === total - 1 ? 0.4 : 1,
+          }}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SlideContent({ slide }) {
+  if (slide.type === "title") return <TitleSlide s={slide} />;
+  if (slide.type === "agenda") return <AgendaSlide s={slide} />;
+  if (slide.type === "what") return <WhatSlide s={slide} />;
+  if (slide.type === "concept") return <ConceptSlide s={slide} />;
+  if (slide.type === "tips") return <TipsSlide s={slide} />;
+  if (slide.type === "install") return <InstallSlide s={slide} />;
+  if (slide.type === "buildtime") return <BuildSlide s={slide} />;
+  return null;
+}
+
+function Tag({ children }) {
+  return (
+    <span
+      style={{
+        background: "#D9770622",
+        color: ACCENT,
+        border: `1px solid ${ACCENT}44`,
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 700,
+        padding: "2px 10px",
+        letterSpacing: 1,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function TitleSlide({ s }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 52, marginBottom: 8 }}>🤖</div>
+      <h1
+        style={{
+          color: "#fff",
+          fontSize: 34,
+          margin: "0 0 12px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h1>
+      <p
+        style={{
+          color: ACCENT,
+          fontSize: 18,
+          margin: "0 0 20px",
+          fontWeight: 600,
+        }}
+      >
+        {s.subtitle}
+      </p>
+      <Tag>{s.meta}</Tag>
+    </div>
+  );
+}
+
+function AgendaSlide({ s }) {
+  return (
+    <div>
+      <h2
+        style={{
+          color: "#fff",
+          fontSize: 26,
+          margin: "0 0 28px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {s.items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              background: item.highlight ? "#D9770618" : "transparent",
+              border: item.highlight
+                ? `1px solid ${ACCENT}44`
+                : "1px solid transparent",
+              borderRadius: 10,
+              padding: "10px 16px",
+            }}
+          >
+            <span style={{ fontSize: 22 }}>{item.icon}</span>
+            <span
+              style={{
+                color: MUTED,
+                fontSize: 13,
+                width: 130,
+                flexShrink: 0,
+                fontFamily: "monospace",
+              }}
+            >
+              {item.time}
+            </span>
+            <span
+              style={{
+                color: item.highlight ? ACCENT : "#fff",
+                fontWeight: item.highlight ? 800 : 500,
+                fontSize: 16,
+              }}
+            >
+              {item.label}
+            </span>
+            {item.highlight && (
+              <span style={{ marginLeft: "auto" }}>
+                <Tag>MAIN EVENT</Tag>
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WhatSlide({ s }) {
+  return (
+    <div>
+      <h2
+        style={{
+          color: "#fff",
+          fontSize: 26,
+          margin: "0 0 6px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h2>
+      <p style={{ color: MUTED, fontSize: 14, margin: "0 0 24px" }}>
+        {s.note}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {s.bullets.map((b, i) => (
+          <div
+            key={i}
+            style={{ display: "flex", alignItems: "flex-start", gap: 14 }}
+          >
+            <span style={{ fontSize: 20, flexShrink: 0 }}>{b.icon}</span>
+            <span style={{ color: TEXT, fontSize: 16 }}>{b.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ConceptSlide({ s }) {
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 4,
+        }}
+      >
+        <span style={{ fontSize: 32 }}>{s.icon}</span>
+        <h2 style={{ color: "#fff", fontSize: 26, margin: 0, fontWeight: 800 }}>
+          {s.title}
+        </h2>
+      </div>
+      <p
+        style={{
+          color: ACCENT,
+          fontWeight: 700,
+          fontSize: 15,
+          margin: "0 0 6px",
+        }}
+      >
+        {s.tagline}
+      </p>
+      <p style={{ color: MUTED, fontSize: 14, margin: "0 0 20px" }}>
+        {s.description}
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
+        {s.points.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              background: "#0F172A",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+              padding: "12px 14px",
+            }}
+          >
+            <div
+              style={{
+                color: ACCENT,
+                fontWeight: 700,
+                fontSize: 13,
+                marginBottom: 4,
+              }}
+            >
+              {p.title}
+            </div>
+            <div style={{ color: TEXT, fontSize: 13 }}>{p.body}</div>
+          </div>
+        ))}
+      </div>
+      {s.grid && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+          }}
+        >
+          {s.grid.map((g, i) => (
+            <div
+              key={i}
+              style={{
+                background: "#0F172A",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 10,
+                padding: "10px 12px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 20 }}>{g.icon}</div>
+              <div style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>
+                {g.label}
+              </div>
+              <div style={{ color: MUTED, fontSize: 11 }}>{g.desc}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {s.tip && (
+        <div
+          style={{
+            background: "#D9770611",
+            border: `1px solid ${ACCENT}44`,
+            borderRadius: 8,
+            padding: "10px 14px",
+            fontSize: 13,
+            color: ACCENT,
+            marginTop: 8,
+          }}
+        >
+          {s.tip}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TipsSlide({ s }) {
+  return (
+    <div>
+      <h2
+        style={{
+          color: "#fff",
+          fontSize: 26,
+          margin: "0 0 20px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 10,
+        }}
+      >
+        {s.tips.map((t, i) => (
+          <div
+            key={i}
+            style={{
+              background: "#0F172A",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+              padding: "12px 14px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{t.icon}</span>
+              <span style={{ color: ACCENT, fontWeight: 700, fontSize: 13 }}>
+                {t.title}
+              </span>
+            </div>
+            <div style={{ color: TEXT, fontSize: 13 }}>{t.body}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InstallSlide({ s }) {
+  return (
+    <div>
+      <h2
+        style={{
+          color: "#fff",
+          fontSize: 26,
+          margin: "0 0 6px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h2>
+      <p style={{ color: MUTED, fontSize: 13, margin: "0 0 20px" }}>
+        {s.note}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {s.steps.map((step, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 14,
+              background: "#0F172A",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+              padding: "12px 16px",
+            }}
+          >
+            <div
+              style={{
+                background: ACCENT,
+                borderRadius: "50%",
+                width: 24,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 12,
+                flexShrink: 0,
+              }}
+            >
+              {step.step}
+            </div>
+            <div>
+              <div
+                style={{
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginBottom: 4,
+                }}
+              >
+                {step.label}
+              </div>
+              {step.code && (
+                <code
+                  style={{
+                    background: "#0a0f1a",
+                    color: ACCENT,
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    display: "block",
+                  }}
+                >
+                  {step.code}
+                </code>
+              )}
+              {step.body && (
+                <div style={{ color: MUTED, fontSize: 13 }}>{step.body}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BuildSlide({ s }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <h2
+        style={{
+          color: "#fff",
+          fontSize: 30,
+          margin: "0 0 8px",
+          fontWeight: 800,
+        }}
+      >
+        {s.title}
+      </h2>
+      <p
+        style={{
+          color: ACCENT,
+          fontSize: 18,
+          fontWeight: 700,
+          margin: "0 0 24px",
+        }}
+      >
+        {s.prompt}
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 10,
+          textAlign: "left",
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            border: `1px solid ${BORDER}`,
+            borderRadius: 12,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              color: ACCENT,
+              fontWeight: 800,
+              fontSize: 13,
+              marginBottom: 10,
+            }}
+          >
+            PROJECT IDEAS
+          </div>
+          {s.ideas.map((idea, i) => (
+            <div
+              key={i}
+              style={{
+                color: TEXT,
+                fontSize: 13,
+                marginBottom: 6,
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <span style={{ color: ACCENT }}>→</span>
+              {idea}
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            border: `1px solid ${BORDER}`,
+            borderRadius: 12,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              color: ACCENT,
+              fontWeight: 800,
+              fontSize: 13,
+              marginBottom: 10,
+            }}
+          >
+            REMEMBER
+          </div>
+          {s.tips.map((tip, i) => (
+            <div
+              key={i}
+              style={{
+                color: TEXT,
+                fontSize: 13,
+                marginBottom: 6,
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <span style={{ color: ACCENT }}>✓</span>
+              {tip}
+            </div>
+          ))}
+        </div>
+      </div>
+      <Tag>Facilitators are here to help — just ask!</Tag>
+    </div>
+  );
+}
