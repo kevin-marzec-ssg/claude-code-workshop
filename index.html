@@ -452,12 +452,44 @@
         return () => clearTimeout(raf);
       }, [s.title]);
 
+      const h1GlowShadow = [
+        '0 0 6px rgba(255,255,255,0.95)',
+        '0 0 18px rgba(217,119,6,0.85)',
+        '0 0 40px rgba(217,119,6,0.55)',
+        '0 0 90px rgba(217,119,6,0.25)',
+      ].join(', ');
+
       return (
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div className="glow-pulse" style={{ fontSize: 'clamp(52px, 6vw, 80px)', marginBottom: 16 }}>🤖</div>
-          <h1 style={{ color: '#fff', fontSize: 'clamp(28px, 3.2vw, 48px)', margin: '0 0 16px', fontWeight: 800, lineHeight: 1.15, minHeight: '1.3em' }}>
-            {typed}{typed !== s.title && <span className="cursor-blink" style={{ color: ACCENT, marginLeft: 2 }}>|</span>}
-          </h1>
+          {/* Effect 1 + 2: glow shadow on h1, plus mirror reflection div below */}
+          <div style={{ position: 'relative', marginBottom: 16 }}>
+            <h1 data-title-h1 style={{
+              color: '#fff', fontSize: 'clamp(28px, 3.2vw, 48px)', margin: 0,
+              fontWeight: 800, lineHeight: 1.15, minHeight: '1.3em',
+              textShadow: h1GlowShadow,
+            }}>
+              {typed}{typed !== s.title && <span className="cursor-blink" style={{ color: ACCENT, marginLeft: 2 }}>|</span>}
+            </h1>
+            {/* Mirror reflection */}
+            <div aria-hidden="true" style={{
+              transform: 'scaleY(-1)',
+              height: '0.55em',
+              overflow: 'hidden',
+              marginTop: 4,
+              WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.22) 0%, transparent 100%)',
+              maskImage: 'linear-gradient(to top, rgba(0,0,0,0.22) 0%, transparent 100%)',
+              color: '#fff',
+              fontSize: 'clamp(28px, 3.2vw, 48px)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              textShadow: h1GlowShadow,
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}>
+              {typed}
+            </div>
+          </div>
           <p style={{
             color: ACCENT, fontSize: 'clamp(18px, 1.8vw, 26px)', margin: '0 0 24px', fontWeight: 600,
             opacity: showSub ? 1 : 0, transform: showSub ? 'translateY(0)' : 'translateY(10px)',
@@ -531,6 +563,20 @@
           ctx.fillStyle = 'rgba(13, 17, 30, 0.92)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+          // Effect 3: get title bounding box relative to canvas for collision detection
+          let titleBounds = null;
+          const h1El = canvas.parentElement && canvas.parentElement.querySelector('[data-title-h1]');
+          if (h1El) {
+            const cr = canvas.getBoundingClientRect();
+            const hr = h1El.getBoundingClientRect();
+            titleBounds = {
+              x: hr.left - cr.left,
+              y: hr.top - cr.top,
+              w: hr.width,
+              h: hr.height,
+            };
+          }
+
           // Code rain — stream-based with head/trail colouring
           ctx.font = `${fs}px monospace`;
           streams.forEach((s, col) => {
@@ -539,13 +585,40 @@
             // Randomly mutate a trail character
             if (Math.random() < 0.08) s.chars[Math.floor(Math.random() * s.chars.length)] = rndChar();
 
+            // Collision check: head pixel position vs title bounds
+            const headPy = Math.floor(s.y) * fs;
+            const headX = col * fs;
+            if (titleBounds && s.flash === undefined) {
+              const inX = headX >= titleBounds.x - fs && headX <= titleBounds.x + titleBounds.w;
+              const inY = headPy >= titleBounds.y && headPy <= titleBounds.y + titleBounds.h;
+              if (inX && inY) {
+                s.flash = 6; // frames to flash bright white
+              }
+            }
+
+            // Decrement flash counter and reset stream after flash
+            if (s.flash !== undefined && s.flash > 0) {
+              s.flash--;
+              if (s.flash === 0) {
+                // Reset this stream immediately
+                s.y = Math.random() * -15;
+                s.speed = 0.15 + Math.random() * 0.33;
+                s.len = 8 + Math.floor(Math.random() * 20);
+                s.chars = Array.from({ length: s.len }, rndChar);
+                delete s.flash;
+              }
+            }
+
             s.chars.forEach((ch, i) => {
               const row = Math.floor(s.y) - i;
               const py = row * fs;
               if (py < -fs || py > canvas.height) return;
               const x = col * fs;
 
-              if (i === 0) {
+              if (s.flash !== undefined && s.flash > 0) {
+                // Flash: all chars bright white during collision
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.6 + s.flash / 6 * 0.4})`;
+              } else if (i === 0) {
                 // Head: bright white
                 ctx.fillStyle = 'rgba(200, 255, 210, 0.95)';
               } else if (i === 1) {
@@ -566,6 +639,7 @@
               s.speed = 0.15 + Math.random() * 0.33;
               s.len = 8 + Math.floor(Math.random() * 20);
               s.chars = Array.from({ length: s.len }, rndChar);
+              delete s.flash;
             }
           });
 
