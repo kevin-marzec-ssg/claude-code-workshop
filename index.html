@@ -581,75 +581,97 @@
           pulse: Math.random() * Math.PI * 2, // phase offset for size pulse
         }));
 
+        // ── Explosion particles & rings from collisions ────────────
+        let sparks = [];  // { x, y, vx, vy, life, ch, white }
+        let rings  = [];  // { x, y, radius, life }
+
+        const spawnExplosion = (x, y) => {
+          // Spark particles — matrix chars flying outward
+          const count = 7 + Math.floor(Math.random() * 5);
+          for (let k = 0; k < count; k++) {
+            const angle = (Math.PI * 2 * k / count) + (Math.random() - 0.5) * 0.6;
+            const spd   = 1.2 + Math.random() * 2.8;
+            sparks.push({
+              x, y,
+              vx: Math.cos(angle) * spd,
+              vy: Math.sin(angle) * spd - 1.0, // slight upward bias
+              life: 0.8 + Math.random() * 0.4,
+              ch: rndChar(),
+              white: Math.random() < 0.35,
+            });
+          }
+          // Expanding ring
+          rings.push({ x, y, radius: 2, life: 1.0 });
+        };
+
         let raf;
         const draw = () => {
           // Solid clear each frame — rain handles its own fading per character
           ctx.fillStyle = 'rgba(13, 17, 30, 0.92)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Effect 3: get title bounding box relative to canvas for collision detection
+          // Collision bounds — recalculate each frame (text may resize)
           let titleBounds = null;
           const h1El = canvas.parentElement && canvas.parentElement.querySelector('[data-title-h1]');
           if (h1El) {
             const cr = canvas.getBoundingClientRect();
             const hr = h1El.getBoundingClientRect();
-            titleBounds = {
-              x: hr.left - cr.left,
-              y: hr.top - cr.top,
-              w: hr.width,
-              h: hr.height,
-            };
+            titleBounds = { x: hr.left - cr.left, y: hr.top - cr.top, w: hr.width, h: hr.height };
           }
 
           // Code rain — stream-based with head/trail colouring
           ctx.font = `${fs}px monospace`;
           streams.forEach((s, col) => {
-            s.y += s.speed;
+            // Stalled streams don't advance — they're mid-explosion
+            if (!s.stall) s.y += s.speed;
 
             // Randomly mutate a trail character
             if (Math.random() < 0.08) s.chars[Math.floor(Math.random() * s.chars.length)] = rndChar();
 
-            // Collision check: head pixel position vs title bounds
+            // Collision check
             const headPy = Math.floor(s.y) * fs;
-            const headX = col * fs;
-            if (titleBounds && s.flash === undefined) {
-              const inX = headX >= titleBounds.x - fs && headX <= titleBounds.x + titleBounds.w;
-              const inY = headPy >= titleBounds.y && headPy <= titleBounds.y + titleBounds.h;
+            const headX  = col * fs + fs * 0.5; // centre of column
+            if (titleBounds && !s.stall) {
+              const inX = headX >= titleBounds.x && headX <= titleBounds.x + titleBounds.w;
+              const inY = headPy >= titleBounds.y - fs * 0.5 && headPy <= titleBounds.y + titleBounds.h;
               if (inX && inY) {
-                s.flash = 6; // frames to flash bright white
+                s.stall = 28;  // freeze stream for 28 frames
+                spawnExplosion(headX, headPy);
               }
             }
 
-            // Decrement flash counter and reset stream after flash
-            if (s.flash !== undefined && s.flash > 0) {
-              s.flash--;
-              if (s.flash === 0) {
-                // Reset this stream immediately
-                s.y = Math.random() * -15;
+            // Count down stall; reset stream when done
+            if (s.stall > 0) {
+              s.stall--;
+              if (s.stall === 0) {
+                s.y     = Math.random() * -15;
                 s.speed = 0.15 + Math.random() * 0.33;
-                s.len = 8 + Math.floor(Math.random() * 20);
+                s.len   = 8 + Math.floor(Math.random() * 20);
                 s.chars = Array.from({ length: s.len }, rndChar);
-                delete s.flash;
+                delete s.stall;
               }
             }
 
             s.chars.forEach((ch, i) => {
               const row = Math.floor(s.y) - i;
-              const py = row * fs;
+              const py  = row * fs;
               if (py < -fs || py > canvas.height) return;
               const x = col * fs;
 
-              if (s.flash !== undefined && s.flash > 0) {
-                // Flash: all chars bright white during collision
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.6 + s.flash / 6 * 0.4})`;
+              // During stall: head dims from bright white → dark; trail fades too
+              if (s.stall > 0) {
+                const t = s.stall / 28;
+                if (i === 0) {
+                  ctx.fillStyle = `rgba(255, 255, 255, ${t * 0.9})`;
+                } else {
+                  const fade = (1 - i / s.len) * t * 0.6;
+                  ctx.fillStyle = `rgba(0, 200, 40, ${fade})`;
+                }
               } else if (i === 0) {
-                // Head: bright white
                 ctx.fillStyle = 'rgba(200, 255, 210, 0.95)';
               } else if (i === 1) {
-                // Just behind head: bright green
                 ctx.fillStyle = 'rgba(50, 255, 100, 0.90)';
               } else {
-                // Trail: fade from bright to dark green
                 const t = 1 - i / s.len;
                 const g = Math.floor(60 + 160 * t);
                 ctx.fillStyle = `rgba(0, ${g}, 20, ${0.15 + t * 0.65})`;
@@ -657,15 +679,49 @@
               ctx.fillText(ch, x, py);
             });
 
-            // Reset stream when it scrolls off bottom
+            // Natural scroll-off reset
             if ((Math.floor(s.y) - s.len) * fs > canvas.height) {
-              s.y = Math.random() * -15;
+              s.y     = Math.random() * -15;
               s.speed = 0.15 + Math.random() * 0.33;
-              s.len = 8 + Math.floor(Math.random() * 20);
+              s.len   = 8 + Math.floor(Math.random() * 20);
               s.chars = Array.from({ length: s.len }, rndChar);
-              delete s.flash;
+              delete s.stall;
             }
           });
+
+          // ── Draw explosion rings ────────────────────────────────
+          rings = rings.filter(r => r.life > 0);
+          rings.forEach(r => {
+            r.radius += 3.2;
+            r.life   -= 0.045;
+            const a = Math.max(0, r.life);
+            ctx.beginPath();
+            ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(100, 255, 120, ${a * 0.8})`;
+            ctx.lineWidth   = 1.5 * a + 0.5;
+            ctx.stroke();
+          });
+
+          // ── Draw spark particles ────────────────────────────────
+          ctx.font = `${fs - 2}px monospace`;
+          sparks = sparks.filter(sp => sp.life > 0);
+          sparks.forEach(sp => {
+            sp.x  += sp.vx;
+            sp.y  += sp.vy;
+            sp.vy += 0.13;  // gravity
+            sp.vx *= 0.97;  // air drag
+            sp.life -= 0.038;
+            const a = Math.max(0, sp.life);
+            if (sp.white) {
+              ctx.fillStyle = `rgba(255, 255, 255, ${a})`;
+            } else {
+              // Transitions from bright green → dim green as life fades
+              const g = Math.floor(120 + 135 * a);
+              ctx.fillStyle = `rgba(0, ${g}, 30, ${a})`;
+            }
+            ctx.fillText(sp.ch, sp.x, sp.y);
+          });
+          ctx.font = `${fs}px monospace`; // restore
 
           // Edges first (drawn under nodes)
           pts.forEach((p, i) => {
