@@ -671,6 +671,17 @@
           rings.push({ x, y, radius: 1, maxR: fs * (1.5 + Math.random()), life: 1.0, scale: ringScale });
         };
 
+        // Mouse repel
+        let mouse = { x: -9999, y: -9999 };
+        const onMouseMove = e => {
+          const cr = canvas.getBoundingClientRect();
+          mouse.x = e.clientX - cr.left;
+          mouse.y = e.clientY - cr.top;
+        };
+        const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseleave', onMouseLeave);
+
         let raf;
         const draw = () => {
           // Solid clear each frame — rain handles its own fading per character
@@ -803,6 +814,16 @@
 
           // Nodes
           pts.forEach(p => {
+            // Mouse repel
+            const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
+            const md = Math.hypot(mdx, mdy);
+            if (md < 90 && md > 0) {
+              const force = (90 - md) / 90 * 0.6;
+              p.vx += (mdx / md) * force;
+              p.vy += (mdy / md) * force;
+            }
+            // Dampen so they don't accelerate forever
+            p.vx *= 0.96; p.vy *= 0.96;
             p.x += p.vx; p.y += p.vy;
             if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
             if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
@@ -837,6 +858,8 @@
         return () => {
           cancelAnimationFrame(raf);
           window.removeEventListener('resize', resize);
+          canvas.removeEventListener('mousemove', onMouseMove);
+          canvas.removeEventListener('mouseleave', onMouseLeave);
         };
       }, []);
 
