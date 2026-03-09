@@ -494,12 +494,14 @@
                 while (shared < title.length && shared < chosen.length && title[shared] === chosen[shared]) shared++;
                 deleteTarget = Math.max(0, shared);
               } else if (!isFirstType && currentTarget !== title) {
-                // Coming back from an alt — return to title briefly
+                // Coming back from an alt — delete back to shared prefix with title
                 lastChosen = null;
                 nextTarget = title;
-                deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
+                let shared = 0;
+                while (shared < currentTarget.length && shared < title.length && currentTarget[shared] === title[shared]) shared++;
+                deleteTarget = Math.max(0, shared);
               } else {
-                // First-time or fallback — stay on title
+                // First-time or fallback — partial delete and retype
                 nextTarget = title;
                 deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               }
