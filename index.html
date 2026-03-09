@@ -774,7 +774,7 @@
           y: Math.random() * canvas.height,
           vx: (Math.random() - 0.5) * 0.5,
           vy: (Math.random() - 0.5) * 0.5,
-          r: Math.random() * 2.2 + 1.0,
+          r: 1.8 * Math.pow(7, Math.random()), // power law: 1.8→12.6, most small, few large
           color: NODE_COLORS[idx % NODE_COLORS.length],
           edgeColor: EDGE_COLORS[idx % EDGE_COLORS.length],
           pulse: Math.random() * Math.PI * 2, // phase offset for size pulse
@@ -988,7 +988,7 @@
             if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
             p.pulse += 0.025;
 
-            const r = p.r + Math.sin(p.pulse) * 0.6;
+            const r = p.r + Math.sin(p.pulse) * (p.r * 0.18); // pulse scales with node size
             ctx.beginPath();
             ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
