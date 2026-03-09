@@ -827,7 +827,7 @@
           rings.push({ x, y, radius: 1, maxR: fs * (1.5 + Math.random()), life: 1.0, scale: ringScale });
         };
 
-        // Mouse repel
+        // Mouse repel — listen on window so text/UI elements don't block events
         let mouse = { x: -9999, y: -9999 };
         const onMouseMove = e => {
           const cr = canvas.getBoundingClientRect();
@@ -835,8 +835,8 @@
           mouse.y = e.clientY - cr.top;
         };
         const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
-        canvas.addEventListener('mousemove', onMouseMove);
-        canvas.addEventListener('mouseleave', onMouseLeave);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseleave', onMouseLeave);
 
         let raf;
         const draw = () => {
@@ -1017,8 +1017,8 @@
         return () => {
           cancelAnimationFrame(raf);
           window.removeEventListener('resize', resize);
-          canvas.removeEventListener('mousemove', onMouseMove);
-          canvas.removeEventListener('mouseleave', onMouseLeave);
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseleave', onMouseLeave);
         };
       }, []);
 
