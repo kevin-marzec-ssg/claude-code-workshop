@@ -815,6 +815,16 @@
             ctx.fill();
           });
 
+          // ── Vignette ────────────────────────────────────────────
+          const vg = ctx.createRadialGradient(
+            canvas.width / 2, canvas.height / 2, canvas.height * 0.25,
+            canvas.width / 2, canvas.height / 2, canvas.height * 0.85,
+          );
+          vg.addColorStop(0, 'rgba(0,0,0,0)');
+          vg.addColorStop(1, 'rgba(0,0,0,0.72)');
+          ctx.fillStyle = vg;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
           // ── Scanlines ───────────────────────────────────────────
           for (let y = 0; y < canvas.height; y += 3) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
