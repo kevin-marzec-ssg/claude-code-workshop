@@ -805,6 +805,7 @@
         let rings  = [];    // { x, y, radius, life }
         let shockwaves = []; // { x, y, radius, life, maxR }
         let pulses = [];    // { p, q, t, speed } — data packets travelling edges
+        let cursorTrail = []; // { x, y, life, ch } — matrix chars left by mouse
 
         // Fire colour palette: white-hot core → yellow → orange → red → ember
         const fireColor = (life) => {
@@ -855,6 +856,10 @@
           const cr = canvas.getBoundingClientRect();
           mouse.x = e.clientX - cr.left;
           mouse.y = e.clientY - cr.top;
+          // Spawn a trail char every ~18px of movement
+          if (Math.random() < 0.45) {
+            cursorTrail.push({ x: mouse.x, y: mouse.y, life: 1.0, ch: rndChar() });
+          }
         };
         const onMouseLeave = () => { mouse.x = -9999; mouse.y = -9999; };
         window.addEventListener('mousemove', onMouseMove);
@@ -1102,6 +1107,17 @@
             ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.fill();
+          });
+
+          // ── Cursor trail ────────────────────────────────────────
+          cursorTrail = cursorTrail.filter(t => t.life > 0);
+          ctx.font = `${fs}px monospace`;
+          cursorTrail.forEach(t => {
+            t.life -= 0.035;
+            const a = Math.max(0, t.life);
+            const g = Math.floor(120 + 135 * a);
+            ctx.fillStyle = `rgba(0, ${g}, 40, ${a * 0.85})`;
+            ctx.fillText(t.ch, t.x, t.y);
           });
 
           // ── Vignette ────────────────────────────────────────────
