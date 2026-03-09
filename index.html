@@ -575,7 +575,28 @@
         setTyped('');
         setShowSub(false);
         setShowMeta(false);
-        raf = setTimeout(tick, 300);
+
+        // Boot sequence: rapid noise scramble across the h1 width before typing starts
+        const BOOT_FRAMES = 22;
+        const BOOT_LEN = title.length;
+        let bootFrame = 0;
+        const bootTick = () => {
+          if (bootFrame < BOOT_FRAMES) {
+            // Fill with random chars, progressively narrowing to empty
+            const noise = Array.from({ length: BOOT_LEN }, () =>
+              Math.random() < (1 - bootFrame / BOOT_FRAMES)
+                ? GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
+                : ' '
+            ).join('');
+            setTyped(noise);
+            bootFrame++;
+            raf = setTimeout(bootTick, 40);
+          } else {
+            setTyped('');
+            raf = setTimeout(tick, 120);
+          }
+        };
+        raf = setTimeout(bootTick, 200);
         return () => clearTimeout(raf);
       }, [s.title]);
 
