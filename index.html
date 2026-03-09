@@ -1067,13 +1067,13 @@
               const q = pts[j];
               const d = Math.hypot(p.x - q.x, p.y - q.y);
               if (d < CONNECT_DIST) {
-                const alpha = 0.22 * (1 - d / CONNECT_DIST);
+                const alpha = 0.65 * (1 - d / CONNECT_DIST);
                 const [r, g, b] = p.edgeColor;
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(q.x, q.y);
                 ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
-                ctx.lineWidth = 0.7;
+                ctx.lineWidth = 1.2;
                 ctx.stroke();
                 // Randomly spawn a data pulse along this edge
                 if (Math.random() < 0.0004) {
