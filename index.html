@@ -1077,19 +1077,8 @@
             ctx.fill();
           });
 
-          // Nodes + ghost trails
+          // Nodes
           pts.forEach(p => {
-            // Draw trail ghosts at previous positions
-            if (p.trail) {
-              p.trail.forEach((t, ti) => {
-                const fade = (ti + 1) / p.trail.length * 0.18;
-                ctx.beginPath();
-                ctx.arc(t.x, t.y, p.r * 0.6, 0, Math.PI * 2);
-                ctx.fillStyle = p.color.replace(/[\d.]+\)$/, `${fade})`);
-                ctx.fill();
-              });
-            }
-
             // Mouse repel — push away when close, then damp the extra velocity
             const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
             const md = Math.hypot(mdx, mdy);
@@ -1103,12 +1092,6 @@
             // Clamp speed so repel can't launch particles too fast
             const spd = Math.hypot(p.vx, p.vy);
             if (spd > 2.5) { p.vx = p.vx / spd * 2.5; p.vy = p.vy / spd * 2.5; }
-
-            // Record trail (keep last 5 positions)
-            p.trail = p.trail || [];
-            p.trail.push({ x: p.x, y: p.y });
-            if (p.trail.length > 5) p.trail.shift();
-
             p.x += p.vx; p.y += p.vy;
             if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
             if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
