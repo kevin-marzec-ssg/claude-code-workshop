@@ -790,6 +790,7 @@
         // ── Explosion particles & rings from collisions ────────────
         let sparks = [];  // { x, y, vx, vy, life, ch, white }
         let rings  = [];  // { x, y, radius, life }
+        let shockwaves = []; // { x, y, radius, life, maxR }
 
         // Fire colour palette: white-hot core → yellow → orange → red → ember
         const fireColor = (life) => {
@@ -845,6 +846,24 @@
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseleave', onMouseLeave);
 
+        // Click shockwave
+        const onClick = e => {
+          const cr = canvas.getBoundingClientRect();
+          const cx = e.clientX - cr.left, cy = e.clientY - cr.top;
+          shockwaves.push({ x: cx, y: cy, radius: 0, life: 1.0, maxR: Math.max(canvas.width, canvas.height) * 0.55 });
+          // Blast nearby particles outward
+          pts.forEach(p => {
+            const dx = p.x - cx, dy = p.y - cy;
+            const d = Math.hypot(dx, dy);
+            if (d < 180 && d > 0) {
+              const force = (180 - d) / 180 * 4.5;
+              p.vx += (dx / d) * force;
+              p.vy += (dy / d) * force;
+            }
+          });
+        };
+        window.addEventListener('click', onClick);
+
         let raf;
         const draw = () => {
           // Solid clear each frame — rain handles its own fading per character
@@ -866,6 +885,7 @@
             // Stalled streams don't advance — they're mid-explosion
             if (!s.stall) s.y += s.speed;
 
+            s._shockX = 0; // reset shockwave offset each frame
             // Randomly mutate a trail character
             if (Math.random() < 0.08) s.chars[Math.floor(Math.random() * s.chars.length)] = rndChar();
 
@@ -927,7 +947,7 @@
                 const g = Math.min(255, Math.floor(60 + 160 * t + wipeAmt * 95));
                 ctx.fillStyle = `rgba(0, ${g}, 20, ${0.15 + t * 0.65})`;
               }
-              ctx.fillText(ch, x + wx, py + wy);
+              ctx.fillText(ch, x + wx + (s._shockX || 0), py + wy);
             });
 
             // Natural scroll-off reset
@@ -938,6 +958,40 @@
               s.chars = Array.from({ length: s.len }, rndChar);
               delete s.stall;
             }
+          });
+
+          // ── Draw shockwaves ─────────────────────────────────────
+          shockwaves = shockwaves.filter(sw => sw.life > 0);
+          shockwaves.forEach(sw => {
+            sw.radius += sw.maxR * 0.035;
+            sw.life -= 0.032;
+            const a = Math.max(0, sw.life);
+            // Outer ring
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(100, 255, 140, ${a * 0.6})`;
+            ctx.lineWidth = 2 * a + 0.5;
+            ctx.stroke();
+            // Inner trailing ring
+            if (sw.radius > 18) {
+              ctx.beginPath();
+              ctx.arc(sw.x, sw.y, sw.radius * 0.7, 0, Math.PI * 2);
+              ctx.strokeStyle = `rgba(200, 255, 220, ${a * 0.25})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+            // Displace nearby rain chars via shockwave radius
+            streams.forEach((s, col) => {
+              s.chars.forEach((_, i) => {
+                const py = (Math.floor(s.y) - i) * fs;
+                const cx2 = col * fs, d = Math.hypot(cx2 - sw.x, py - sw.y);
+                const edge = sw.radius;
+                if (Math.abs(d - edge) < fs * 2) {
+                  const push = (1 - Math.abs(d - edge) / (fs * 2)) * a * fs * 3;
+                  s._shockX = (s._shockX || 0) + (cx2 - sw.x) / (d || 1) * push;
+                }
+              });
+            });
           });
 
           // ── Draw explosion rings (fire-coloured) ───────────────
@@ -1036,6 +1090,7 @@
           window.removeEventListener('resize', resize);
           window.removeEventListener('mousemove', onMouseMove);
           window.removeEventListener('mouseleave', onMouseLeave);
+          window.removeEventListener('click', onClick);
         };
       }, []);
 
