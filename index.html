@@ -584,16 +584,19 @@
                 chars[p] = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
               });
               const glitchedText = chars.join('');
-              // Restore after 120-350ms (random, long enough to catch)
-              const holdMs = 120 + Math.random() * 230;
-              setTimeout(() => {
-                setTyped(c => {
-                  if (c !== glitchedText) return c; // typing moved on, don't restore
-                  const r = c.split('');
-                  positions.forEach((p, i) => { if (p < r.length) r[p] = originals[i]; });
-                  return r.join('');
-                });
-              }, holdMs);
+              // ~25% chance the glitch persists until the next typing change
+              if (Math.random() < 0.75) {
+                const holdMs = 120 + Math.random() * 230;
+                setTimeout(() => {
+                  setTyped(c => {
+                    if (c !== glitchedText) return c; // typing moved on, don't restore
+                    const r = c.split('');
+                    positions.forEach((p, i) => { if (p < r.length) r[p] = originals[i]; });
+                    return r.join('');
+                  });
+                }, holdMs);
+              }
+              // else: stays corrupted until typing animation naturally overwrites it
               return glitchedText;
             });
             schedule();
