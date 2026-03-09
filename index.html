@@ -470,6 +470,7 @@
         let firstComplete = false;
         let isFirstType = true;
         let lastChosen = null; // prevent consecutive repeats
+        let titleSeenOnce = false; // after first display, always force alt next
         let raf;
 
         const tick = () => {
@@ -481,21 +482,25 @@
               pos = Math.floor(currentTarget.length * 0.25 + Math.random() * currentTarget.length * 0.75);
               setTyped(currentTarget.slice(0, pos));
 
-              // After the first pass, occasionally diverge into an alt phrase
-              // ~75% chance of branching to an alt (giving real title only ~25% of display time)
-              if (!isFirstType && currentTarget === title && Math.random() < 0.75) {
-                const pool = alts.filter(a => a !== lastChosen && a !== currentTarget);
+              // After the first complete display of the real title, always pick an alt.
+              // The real title only ever shows once as a "home base"; every subsequent
+              // visit immediately branches to a new alt phrase.
+              if (!isFirstType && currentTarget === title && titleSeenOnce) {
+                const pool = alts.filter(a => a !== lastChosen);
                 const chosen = pool[Math.floor(Math.random() * pool.length)];
                 lastChosen = chosen;
                 nextTarget = chosen;
-                // Find shared prefix length between title and chosen alt
                 let shared = 0;
                 while (shared < title.length && shared < chosen.length && title[shared] === chosen[shared]) shared++;
-                // Delete down to the shared prefix (0 = full retype for completely different alts)
                 deleteTarget = Math.max(0, shared);
+              } else if (!isFirstType && currentTarget !== title) {
+                // Coming back from an alt — return to title briefly
+                lastChosen = null;
+                nextTarget = title;
+                deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               } else {
-                lastChosen = null; // reset so any alt can follow next time
-                nextTarget = title; // resolve back to real title
+                // First-time or fallback — stay on title
+                nextTarget = title;
                 deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               }
 
@@ -539,6 +544,7 @@
               setTimeout(() => setShowSub(true), 400);
               setTimeout(() => setShowMeta(true), 900);
             }
+            if (currentTarget === title) titleSeenOnce = true;
             isFirstType = false;
             state = 'pausing';
             // Alts pause long enough to read; real title pauses a bit longer
