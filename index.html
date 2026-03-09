@@ -110,19 +110,14 @@
         icon: "🔧",
         tagline: "Claude Code isn't just a chatbot — it acts.",
         description: "Claude has built-in skills it uses automatically based on your request.",
-        points: [
-          { title: "File R/W", body: "Read, create, and edit any file in your project" },
-          { title: "Bash / Terminal", body: "Run commands, scripts, installs, tests" },
-          { title: "Web Search", body: "Look up docs, packages, or error messages" },
-          { title: "Test Runner", body: "Run your test suite and fix failing tests" },
-        ],
+        points: [],
         grid: [
-          { icon: "📂", label: "File R/W", desc: "Read, create, and edit any file in your project" },
-          { icon: "🖥️", label: "Bash / Terminal", desc: "Run commands, scripts, installs, tests" },
-          { icon: "🔍", label: "Web Search", desc: "Look up docs, packages, or error messages" },
-          { icon: "🧪", label: "Test Runner", desc: "Run your test suite and fix failing tests" },
-          { icon: "🌐", label: "Browser", desc: "Open and interact with web pages (where enabled)" },
-          { icon: "🔌", label: "MCP Servers", desc: "Connect to external tools: GitHub, Jira, DBs, APIs" },
+          { icon: "📂", label: "File R/W", desc: "Read, create, edit, and delete files anywhere in your project. Claude tracks its changes and can revert on request." },
+          { icon: "🖥️", label: "Bash / Terminal", desc: "Run any shell command — npm installs, build scripts, git operations, and custom tooling." },
+          { icon: "🔍", label: "Web Search", desc: "Look up docs, Stack Overflow answers, package info, or error messages in real time." },
+          { icon: "🧪", label: "Test Runner", desc: "Execute your test suite, read failures, fix the code, and re-run — fully autonomously." },
+          { icon: "🌐", label: "Browser", desc: "Navigate web pages, interact with UIs, and extract content (where the browser tool is enabled)." },
+          { icon: "🔌", label: "MCP Servers", desc: "Extend Claude with custom tools via Model Context Protocol — GitHub, Jira, databases, internal APIs, and more." },
         ],
         tip: "💡 You can add your own tools via MCP (Model Context Protocol).",
       },
@@ -277,21 +272,23 @@
           </div>
           <p style={{ color: ACCENT, fontWeight: 700, fontSize: 15, margin: "0 0 6px" }}>{s.tagline}</p>
           <p style={{ color: MUTED, fontSize: 14, margin: "0 0 20px" }}>{s.description}</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {s.points.map((p, i) => (
-              <div key={i} style={{ background: "#0F172A", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 14px" }}>
-                <div style={{ color: ACCENT, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{p.title}</div>
-                <div style={{ color: TEXT, fontSize: 13 }}>{p.body}</div>
-              </div>
-            ))}
-          </div>
+          {s.points.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              {s.points.map((p, i) => (
+                <div key={i} style={{ background: "#0F172A", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: ACCENT, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{p.title}</div>
+                  <div style={{ color: TEXT, fontSize: 13 }}>{p.body}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {s.grid && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
               {s.grid.map((g, i) => (
                 <div key={i} style={{ background: "#0F172A", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
                   <div style={{ fontSize: 20 }}>{g.icon}</div>
-                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>{g.label}</div>
-                  <div style={{ color: MUTED, fontSize: 11 }}>{g.desc}</div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{g.label}</div>
+                  <div style={{ color: MUTED, fontSize: 12 }}>{g.desc}</div>
                 </div>
               ))}
             </div>
