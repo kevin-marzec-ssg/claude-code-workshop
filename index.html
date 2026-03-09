@@ -103,6 +103,26 @@
         tip: "💡 Subagents shine when you say: \"Build the frontend and backend at the same time.\"",
       },
       {
+        id: 55,
+        type: "subagents-howto",
+        label: "Using Subagents",
+        title: "Getting Started with Subagents",
+        tagline: "You don't need to do anything special — just ask.",
+        prompts: [
+          { label: "Parallel work", example: "Build the API endpoints and the React frontend at the same time." },
+          { label: "Split concerns", example: "Write the feature, then have a separate agent write the tests for it." },
+          { label: "Explicit delegation", example: "Use one agent to refactor the auth module and another to update the docs." },
+          { label: "Force parallel", example: "Do all three of these tasks in parallel: add logging, update the README, and fix the lint errors." },
+        ],
+        watchFor: [
+          "Claude will tell you when it's spinning up subagents — look for 'I'll delegate this to...'",
+          "Each subagent has its own context, so give clear scoped instructions",
+          "Results are merged back by the parent — you get one coherent response",
+          "Use Plan Mode first on big tasks so you can see the parallelization strategy before it runs",
+        ],
+        tip: "💡 If Claude isn't parallelizing automatically, just say: \"do these tasks in parallel.\"",
+      },
+      {
         id: 6,
         type: "concept",
         label: "Skills & Tools",
@@ -123,6 +143,24 @@
       },
       {
         id: 7,
+        type: "custom-skills",
+        label: "Custom Skills",
+        title: "Creating Your Own Skills",
+        tagline: "Turn your best prompts into reusable slash commands.",
+        description: "Skills are markdown files that become /commands inside Claude Code. Write one once, use it forever — across any project.",
+        locations: [
+          { scope: "Project", path: ".claude/commands/my-skill.md", desc: "Available to everyone working in this repo" },
+          { scope: "Global", path: "~/.claude/commands/my-skill.md", desc: "Available in every project on your machine" },
+        ],
+        example: {
+          filename: ".claude/commands/deploy-check.md",
+          content: `Review the staged changes and verify:\n- No console.log or debug statements left in\n- All new functions have error handling\n- No hardcoded secrets or API keys\n- Tests exist for new functionality\n\nProvide a one-line summary of what changed.`,
+        },
+        invoke: "/deploy-check",
+        tip: "💡 Great skill ideas: code review checklist, commit message formatter, test scaffolding, PR description writer.",
+      },
+      {
+        id: 8,
         type: "tips",
         label: "Pro Tips",
         title: "Prompting Claude Code Well",
@@ -376,11 +414,84 @@
       );
     }
 
+    function SubagentsHowtoSlide({ s }) {
+      return (
+        <div>
+          <h2 style={{ color: "#fff", fontSize: 26, margin: "0 0 4px", fontWeight: 800 }}>{s.title}</h2>
+          <p style={{ color: ACCENT, fontWeight: 700, fontSize: 15, margin: "0 0 16px" }}>{s.tagline}</p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+            {s.prompts.map((p, i) => (
+              <div key={i} style={{ background: "#0F172A", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "10px 14px" }}>
+                <div style={{ color: ACCENT, fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{p.label}</div>
+                <div style={{ background: "#0a0f1a", borderRadius: 6, padding: "6px 10px" }}>
+                  <span style={{ color: MUTED, fontSize: 12, fontStyle: "italic" }}>"</span>
+                  <span style={{ color: TEXT, fontSize: 12 }}>{p.example}</span>
+                  <span style={{ color: MUTED, fontSize: 12, fontStyle: "italic" }}>"</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+            <div style={{ color: ACCENT, fontWeight: 700, fontSize: 12, marginBottom: 8 }}>WHAT TO WATCH FOR</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {s.watchFor.map((w, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, color: TEXT, fontSize: 13 }}>
+                  <span style={{ color: ACCENT, flexShrink: 0 }}>→</span>{w}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: "#D9770611", border: `1px solid ${ACCENT}44`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: ACCENT }}>
+            {s.tip}
+          </div>
+        </div>
+      );
+    }
+
+    function CustomSkillsSlide({ s }) {
+      return (
+        <div>
+          <h2 style={{ color: "#fff", fontSize: 26, margin: "0 0 4px", fontWeight: 800 }}>{s.title}</h2>
+          <p style={{ color: ACCENT, fontWeight: 700, fontSize: 15, margin: "0 0 4px" }}>{s.tagline}</p>
+          <p style={{ color: MUTED, fontSize: 14, margin: "0 0 16px" }}>{s.description}</p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+            {s.locations.map((l, i) => (
+              <div key={i} style={{ background: "#0F172A", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "10px 14px" }}>
+                <div style={{ color: ACCENT, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{l.scope}</div>
+                <code style={{ color: "#fff", fontSize: 12, display: "block", marginBottom: 4 }}>{l.path}</code>
+                <div style={{ color: MUTED, fontSize: 12 }}>{l.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: "#0a0f1a", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "12px 16px", marginBottom: 14 }}>
+            <div style={{ color: MUTED, fontSize: 11, marginBottom: 8, fontFamily: "monospace" }}>{s.example.filename}</div>
+            <pre style={{ color: TEXT, fontSize: 13, margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{s.example.content}</pre>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <span style={{ color: MUTED, fontSize: 13 }}>Then invoke it with:</span>
+            <code style={{ background: "#D9770622", color: ACCENT, border: `1px solid ${ACCENT}44`, borderRadius: 6, padding: "3px 12px", fontSize: 14, fontWeight: 700 }}>{s.invoke}</code>
+          </div>
+
+          <div style={{ background: "#D9770611", border: `1px solid ${ACCENT}44`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: ACCENT }}>
+            {s.tip}
+          </div>
+        </div>
+      );
+    }
+
     function SlideContent({ slide }) {
       if (slide.type === "title") return <TitleSlide s={slide} />;
       if (slide.type === "agenda") return <AgendaSlide s={slide} />;
       if (slide.type === "what") return <WhatSlide s={slide} />;
       if (slide.type === "concept") return <ConceptSlide s={slide} />;
+      if (slide.type === "subagents-howto") return <SubagentsHowtoSlide s={slide} />;
+      if (slide.type === "custom-skills") return <CustomSkillsSlide s={slide} />;
       if (slide.type === "tips") return <TipsSlide s={slide} />;
       if (slide.type === "install") return <InstallSlide s={slide} />;
       if (slide.type === "buildtime") return <BuildSlide s={slide} />;
