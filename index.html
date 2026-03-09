@@ -788,9 +788,10 @@
         }));
 
         // ── Explosion particles & rings from collisions ────────────
-        let sparks = [];  // { x, y, vx, vy, life, ch, white }
-        let rings  = [];  // { x, y, radius, life }
+        let sparks = [];    // { x, y, vx, vy, life, ch, white }
+        let rings  = [];    // { x, y, radius, life }
         let shockwaves = []; // { x, y, radius, life, maxR }
+        let pulses = [];    // { p, q, t, speed } — data packets travelling edges
 
         // Fire colour palette: white-hot core → yellow → orange → red → ember
         const fireColor = (life) => {
@@ -1021,7 +1022,7 @@
           });
           ctx.font = `${fs}px monospace`; // restore
 
-          // Edges first (drawn under nodes)
+          // Edges first (drawn under nodes) + spawn data pulses
           pts.forEach((p, i) => {
             for (let j = i + 1; j < pts.length; j++) {
               const q = pts[j];
@@ -1035,8 +1036,32 @@
                 ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
                 ctx.lineWidth = 0.7;
                 ctx.stroke();
+                // Randomly spawn a data pulse along this edge
+                if (Math.random() < 0.0004) {
+                  pulses.push({ p, q, t: 0, speed: 0.008 + Math.random() * 0.012 });
+                }
               }
             }
+          });
+
+          // Draw data pulses
+          pulses = pulses.filter(pu => pu.t <= 1);
+          pulses.forEach(pu => {
+            pu.t += pu.speed;
+            const t = pu.t;
+            const x = pu.p.x + (pu.q.x - pu.p.x) * t;
+            const y = pu.p.y + (pu.q.y - pu.p.y) * t;
+            const fade = Math.sin(t * Math.PI); // bright in middle, fades at ends
+            // Glow halo
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(180, 255, 200, ${fade * 0.25})`;
+            ctx.fill();
+            // Bright core dot
+            ctx.beginPath();
+            ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(220, 255, 230, ${fade * 0.9})`;
+            ctx.fill();
           });
 
           // Nodes
