@@ -815,6 +815,12 @@
             ctx.fill();
           });
 
+          // ── Scanlines ───────────────────────────────────────────
+          for (let y = 0; y < canvas.height; y += 3) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
+            ctx.fillRect(0, y, canvas.width, 1);
+          }
+
           raf = requestAnimationFrame(draw);
         };
         draw();
