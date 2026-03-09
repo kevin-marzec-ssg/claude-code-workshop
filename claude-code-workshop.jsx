@@ -15,12 +15,12 @@ const slides = [
     label: "Agenda",
     title: "Today's Plan",
     items: [
-      { time: "0:00 - 0:05", label: "Intro & Goals", icon: "\uD83D\uDC4B" },
-      { time: "0:05 - 0:10", label: "What is Claude Code?", icon: "\uD83E\uDD16" },
-      { time: "0:10 - 0:18", label: "Core Concepts", icon: "\uD83E\uDDE0" },
-      { time: "0:18 - 0:25", label: "Install & First Run", icon: "\u26A1" },
-      { time: "0:25 - 0:30", label: "Live Demo", icon: "\uD83C\uDFAC" },
-      { time: "0:30 - 1:30", label: "Hands-On Build Time", icon: "\uD83D\uDEE0\uFE0F", highlight: true },
+      { time: "2:00 - 2:05", label: "Intro & Goals", icon: "\uD83D\uDC4B" },
+      { time: "2:05 - 2:10", label: "What is Claude Code?", icon: "\uD83E\uDD16" },
+      { time: "2:10 - 2:18", label: "Core Concepts", icon: "\uD83E\uDDE0" },
+      { time: "2:18 - 2:25", label: "Install & First Run", icon: "\u26A1" },
+      { time: "2:25 - 2:30", label: "Live Demo", icon: "\uD83C\uDFAC" },
+      { time: "2:30 - 3:30", label: "Hands-On Build Time", icon: "\uD83D\uDEE0\uFE0F", highlight: true },
     ],
   },
   {
