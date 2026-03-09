@@ -346,6 +346,8 @@
     // ─── Slide Components ──────────────────────────────────────────────────────
 
     // Canvas lives at the App level so it fills the entire card — see TitleBackground below.
+    const GLITCH_CHARS = 'ｦｧｨｩｪｫｬｭｮｯｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉ#@!%&?$<>[]{}~^*+=-';
+
     function TitleSlide({ s }) {
       const [typed, setTyped] = useState('');
       const [showSub, setShowSub] = useState(false);
@@ -480,6 +482,42 @@
         raf = setTimeout(tick, 300);
         return () => clearTimeout(raf);
       }, [s.title]);
+
+      // Glitch effect: occasionally corrupt 1-3 chars for 60-120ms then restore
+      useEffect(() => {
+        let t;
+        const schedule = () => {
+          t = setTimeout(() => {
+            setTyped(cur => {
+              if (cur.length < 4) { schedule(); return cur; }
+              const chars = cur.split('');
+              const count = 1 + Math.floor(Math.random() * 2);
+              const positions = [];
+              for (let i = 0; i < count; i++) {
+                positions.push(Math.floor(Math.random() * chars.length));
+              }
+              const originals = positions.map(p => chars[p]);
+              positions.forEach(p => {
+                chars[p] = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+              });
+              const glitchedText = chars.join('');
+              // Restore after 60-130ms
+              setTimeout(() => {
+                setTyped(c => {
+                  if (c !== glitchedText) return c; // typing moved on, don't restore
+                  const r = c.split('');
+                  positions.forEach((p, i) => { if (p < r.length) r[p] = originals[i]; });
+                  return r.join('');
+                });
+              }, 60 + Math.random() * 70);
+              return glitchedText;
+            });
+            schedule();
+          }, 2500 + Math.random() * 4000);
+        };
+        schedule();
+        return () => clearTimeout(t);
+      }, []);
 
       const h1GlowShadow = [
         '0 0 6px rgba(255,255,255,0.95)',
