@@ -24,18 +24,23 @@
       50%, 100% { opacity: 0; }
     }
     .cursor-blink { animation: cursor-blink 0.75s step-end infinite; }
-    @keyframes shimmer-sweep {
+    @keyframes shimmer-ltr {
       0%   { background-position: -200% center; }
       100% { background-position: 200% center; }
     }
-    .divider-shimmer {
-      background: linear-gradient(90deg,
-        transparent 0%, transparent 35%,
-        rgba(217,119,6,0.9) 50%,
-        transparent 65%, transparent 100%
-      );
+    @keyframes shimmer-rtl {
+      0%   { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+    .divider-shimmer-l {
+      background: linear-gradient(90deg, transparent 0%, transparent 35%, rgba(217,119,6,0.9) 50%, transparent 65%, transparent 100%);
       background-size: 200% 100%;
-      animation: shimmer-sweep 3s linear infinite;
+      animation: shimmer-ltr 3s linear infinite;
+    }
+    .divider-shimmer-r {
+      background: linear-gradient(90deg, transparent 0%, transparent 35%, rgba(217,119,6,0.9) 50%, transparent 65%, transparent 100%);
+      background-size: 200% 100%;
+      animation: shimmer-rtl 3s linear infinite;
     }
   </style>
 </head>
@@ -726,9 +731,9 @@
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
             }}>
-              <div className="divider-shimmer" style={{ flex: 1, height: 1 }} />
+              <div className="divider-shimmer-l" style={{ flex: 1, height: 1 }} />
               <span style={{ color: ACCENT, fontSize: 'clamp(10px, 0.9vw, 13px)', opacity: 0.7, letterSpacing: 3, fontFamily: 'monospace' }}>◆</span>
-              <div className="divider-shimmer" style={{ flex: 1, height: 1, animationDelay: '-1.5s' }} />
+              <div className="divider-shimmer-r" style={{ flex: 1, height: 1 }} />
             </div>
             <p style={{
               color: '#e2e8f0',
