@@ -970,16 +970,19 @@
 
           // Nodes
           pts.forEach(p => {
-            // Mouse repel
+            // Mouse repel — push away when close, then damp the extra velocity
             const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
             const md = Math.hypot(mdx, mdy);
             if (md < 90 && md > 0) {
-              const force = (90 - md) / 90 * 0.6;
+              const force = (90 - md) / 90 * 0.55;
               p.vx += (mdx / md) * force;
               p.vy += (mdy / md) * force;
+              // Only damp when repelled so baseline wander isn't killed
+              p.vx *= 0.94; p.vy *= 0.94;
             }
-            // Dampen so they don't accelerate forever
-            p.vx *= 0.96; p.vy *= 0.96;
+            // Clamp speed so repel can't launch particles too fast
+            const spd = Math.hypot(p.vx, p.vy);
+            if (spd > 2.5) { p.vx = p.vx / spd * 2.5; p.vy = p.vy / spd * 2.5; }
             p.x += p.vx; p.y += p.vy;
             if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
             if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
