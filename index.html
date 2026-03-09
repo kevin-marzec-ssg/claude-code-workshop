@@ -404,16 +404,17 @@
               setTyped(currentTarget.slice(0, pos));
 
               // After the first pass, occasionally diverge into an alt phrase
-              if (!isFirstType && currentTarget === title && Math.random() < 0.50) {
+              // ~75% chance of branching to an alt (giving real title only ~25% of display time)
+              if (!isFirstType && currentTarget === title && Math.random() < 0.75) {
                 const chosen = alts[Math.floor(Math.random() * alts.length)];
                 nextTarget = chosen;
                 // Find shared prefix length between title and chosen alt
                 let shared = 0;
                 while (shared < title.length && shared < chosen.length && title[shared] === chosen[shared]) shared++;
-                // Delete down to just past the shared prefix (or 0 for completely different starts)
+                // Delete down to the shared prefix (0 = full retype for completely different alts)
                 deleteTarget = Math.max(0, shared);
               } else {
-                nextTarget = title; // always resolve back to real title
+                nextTarget = title; // resolve back to real title
                 deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               }
 
@@ -459,10 +460,10 @@
             }
             isFirstType = false;
             state = 'pausing';
-            // Shorter pause on alts so they feel like typos, longer on the real title
+            // Alts pause long enough to read; real title pauses a bit longer
             pauseEnd = now + (currentTarget === title
-              ? 3000 + Math.random() * 3500
-              : 1200 + Math.random() * 800);
+              ? 2500 + Math.random() * 2500
+              : 1800 + Math.random() * 1200);
             // Always resolve back to the real title after an alt
             if (currentTarget !== title) nextTarget = title;
             raf = setTimeout(tick, 30);
