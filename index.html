@@ -754,17 +754,19 @@
         // ── Particle graph ─────────────────────────────────────────
         // Node colours: mix of amber, cyan, violet, white
         const NODE_COLORS = [
-          'rgba(217, 119,   6, 0.75)',  // amber
-          'rgba( 56, 189, 248, 0.65)',  // cyan
-          'rgba(167,  85, 247, 0.65)',  // violet
-          'rgba(255, 255, 255, 0.50)',  // white
-          'rgba( 52, 211, 153, 0.60)',  // emerald
+          'rgba( 52, 255, 120, 0.92)',  // bright green (dominant)
+          'rgba( 20, 200,  80, 0.88)',  // mid green
+          'rgba(100, 255, 180, 0.85)',  // cyan-green
+          'rgba(  0, 255,  70, 0.90)',  // pure matrix green
+          'rgba(180, 255, 220, 0.80)',  // pale green-white
+          'rgba( 52, 211, 153, 0.90)',  // emerald accent
+          'rgba(200, 255, 200, 0.75)',  // ghostly green
         ];
         const EDGE_COLORS = [
-          [217, 119,   6],   // amber
-          [ 56, 189, 248],   // cyan
-          [167,  85, 247],   // violet
-          [255, 255, 255],   // white
+          [ 52, 255, 120],   // bright green
+          [ 20, 200,  80],   // mid green
+          [100, 255, 180],   // cyan-green
+          [  0, 255,  70],   // matrix green
         ];
 
         const NUM_P = 55;
@@ -892,6 +894,14 @@
               if (py < -fs || py > canvas.height) return;
               const x = col * fs;
 
+              // Mouse wipe: per-character displacement based on proximity to cursor
+              const WIPE_R = fs * 5;
+              const dx = x - mouse.x, dy = py - mouse.y;
+              const dist = Math.hypot(dx, dy);
+              const wipeAmt = dist < WIPE_R ? (1 - dist / WIPE_R) : 0;
+              const wx = wipeAmt > 0 ? (dx / (dist || 1)) * wipeAmt * wipeAmt * fs * 3 : 0;
+              const wy = wipeAmt > 0 ? (dy / (dist || 1)) * wipeAmt * wipeAmt * fs * 2 : 0;
+
               // During stall: head dims from bright white → dark; trail fades too
               if (s.stall > 0) {
                 const t = s.stall / 28;
@@ -902,15 +912,17 @@
                   ctx.fillStyle = `rgba(0, 200, 40, ${fade})`;
                 }
               } else if (i === 0) {
-                ctx.fillStyle = 'rgba(200, 255, 210, 0.95)';
+                const g = Math.min(255, Math.floor(210 + wipeAmt * 45));
+                ctx.fillStyle = `rgba(${g}, 255, ${g}, 0.95)`;
               } else if (i === 1) {
-                ctx.fillStyle = 'rgba(50, 255, 100, 0.90)';
+                const g = Math.min(255, Math.floor(100 + wipeAmt * 155));
+                ctx.fillStyle = `rgba(50, ${g}, 100, 0.90)`;
               } else {
                 const t = 1 - i / s.len;
-                const g = Math.floor(60 + 160 * t);
+                const g = Math.min(255, Math.floor(60 + 160 * t + wipeAmt * 95));
                 ctx.fillStyle = `rgba(0, ${g}, 20, ${0.15 + t * 0.65})`;
               }
-              ctx.fillText(ch, x, py);
+              ctx.fillText(ch, x + wx, py + wy);
             });
 
             // Natural scroll-off reset
