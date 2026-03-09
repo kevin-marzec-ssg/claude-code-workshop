@@ -392,6 +392,7 @@
         let pauseEnd = 0;
         let firstComplete = false;
         let isFirstType = true;
+        let lastChosen = null; // prevent consecutive repeats
         let raf;
 
         const tick = () => {
@@ -406,7 +407,9 @@
               // After the first pass, occasionally diverge into an alt phrase
               // ~75% chance of branching to an alt (giving real title only ~25% of display time)
               if (!isFirstType && currentTarget === title && Math.random() < 0.75) {
-                const chosen = alts[Math.floor(Math.random() * alts.length)];
+                const pool = alts.filter(a => a !== lastChosen && a !== currentTarget);
+                const chosen = pool[Math.floor(Math.random() * pool.length)];
+                lastChosen = chosen;
                 nextTarget = chosen;
                 // Find shared prefix length between title and chosen alt
                 let shared = 0;
@@ -414,6 +417,7 @@
                 // Delete down to the shared prefix (0 = full retype for completely different alts)
                 deleteTarget = Math.max(0, shared);
               } else {
+                lastChosen = null; // reset so any alt can follow next time
                 nextTarget = title; // resolve back to real title
                 deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               }
