@@ -353,15 +353,35 @@
 
       useEffect(() => {
         const title = s.title; // "Getting Started with Claude Code"
-        // All alts share the "Getting " prefix (8 chars) so transitions are seamless
+        // Mix of alts — some share "Getting " prefix (idx 8), some diverge earlier or start fresh
         const alts = [
+          // Share "Getting " prefix (delete to 8, retype)
           "Getting Ready to Ship Faster!",
           "Getting Ready to Agentic Engineer!",
           "Getting Ready to Power Up!",
           "Getting Good at Delegation!",
           "Getting Ready to Build Something Real!",
-          "Getting Comfortable with AI!",
+          "Getting Comfortable with AI Agents!",
           "Getting Ready to Supercharge Your Team!",
+          "Getting Dangerous with Claude Code!",
+          "Getting Things Done 10x Faster!",
+          "Getting Ahead of the Curve!",
+          // Share "Get" prefix (delete to 3)
+          "Get More Done in Less Time!",
+          "Get Your Team Building with AI!",
+          "Get Unstuck in Seconds!",
+          // Share "G" prefix (delete to 1) — fully new direction
+          "Go Faster. Build Smarter.",
+          "Gone Are the Days of Slow Dev Cycles!",
+          // Completely different — delete entire title, retype from scratch
+          "AI-Powered Development is Here.",
+          "Your Copilot is Ready. Are You?",
+          "Agentic Engineering Starts Now.",
+          "Ship More. Toil Less.",
+          "Let Claude Code Handle the Boring Stuff.",
+          "From Idea to PR in Minutes.",
+          "The Future of Dev Velocity is Here.",
+          "Build Like You Have a Team of 10.",
         ];
 
         let pos = 0;
@@ -382,15 +402,19 @@
               // Jump cursor to a random position and start deleting
               pos = Math.floor(currentTarget.length * 0.25 + Math.random() * currentTarget.length * 0.75);
               setTyped(currentTarget.slice(0, pos));
-              deleteTarget = Math.max(3, Math.floor(Math.random() * pos * 0.55));
 
               // After the first pass, occasionally diverge into an alt phrase
-              // Only when we're on the real title and deleting back past the shared prefix (pos 8)
-              if (!isFirstType && currentTarget === title && deleteTarget <= 8 && Math.random() < 0.45) {
-                nextTarget = alts[Math.floor(Math.random() * alts.length)];
-                deleteTarget = 8; // always delete to end of shared "Getting " prefix
+              if (!isFirstType && currentTarget === title && Math.random() < 0.50) {
+                const chosen = alts[Math.floor(Math.random() * alts.length)];
+                nextTarget = chosen;
+                // Find shared prefix length between title and chosen alt
+                let shared = 0;
+                while (shared < title.length && shared < chosen.length && title[shared] === chosen[shared]) shared++;
+                // Delete down to just past the shared prefix (or 0 for completely different starts)
+                deleteTarget = Math.max(0, shared);
               } else {
-                nextTarget = currentTarget === title ? title : title; // always resolve back to real title
+                nextTarget = title; // always resolve back to real title
+                deleteTarget = Math.max(1, Math.floor(Math.random() * pos * 0.55));
               }
 
               state = 'deleting';
