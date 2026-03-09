@@ -24,6 +24,19 @@
       50%, 100% { opacity: 0; }
     }
     .cursor-blink { animation: cursor-blink 0.75s step-end infinite; }
+    @keyframes shimmer-sweep {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .divider-shimmer {
+      background: linear-gradient(90deg,
+        transparent 0%, transparent 35%,
+        rgba(217,119,6,0.9) 50%,
+        transparent 65%, transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer-sweep 3s linear infinite;
+    }
   </style>
 </head>
 <body>
@@ -692,9 +705,9 @@
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
             }}>
-              <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, transparent, ${ACCENT}66)` }} />
+              <div className="divider-shimmer" style={{ flex: 1, height: 1 }} />
               <span style={{ color: ACCENT, fontSize: 'clamp(10px, 0.9vw, 13px)', opacity: 0.7, letterSpacing: 3, fontFamily: 'monospace' }}>◆</span>
-              <div style={{ flex: 1, height: 1, background: `linear-gradient(to left, transparent, ${ACCENT}66)` }} />
+              <div className="divider-shimmer" style={{ flex: 1, height: 1, animationDelay: '-1.5s' }} />
             </div>
             <p style={{
               color: '#e2e8f0',
