@@ -586,23 +586,47 @@
         let sparks = [];  // { x, y, vx, vy, life, ch, white }
         let rings  = [];  // { x, y, radius, life }
 
+        // Fire colour palette: white-hot core → yellow → orange → red → ember
+        const fireColor = (life) => {
+          // life 1.0 → 0: white → yellow → orange → red → dark red
+          if (life > 0.75) {
+            // white-hot → yellow
+            const t = (life - 0.75) / 0.25;
+            const g = Math.floor(200 + 55 * t);
+            return `rgba(255, ${g}, ${Math.floor(80 * (1 - t))}, ${life})`;
+          } else if (life > 0.45) {
+            // yellow → orange
+            const t = (life - 0.45) / 0.30;
+            const g = Math.floor(80 + 120 * t);
+            return `rgba(255, ${g}, 0, ${life})`;
+          } else {
+            // orange → deep red → ember
+            const t = life / 0.45;
+            const g = Math.floor(40 * t);
+            return `rgba(${Math.floor(180 + 75 * t)}, ${g}, 0, ${life * 0.9})`;
+          }
+        };
+
         const spawnExplosion = (x, y) => {
-          // Spark particles — matrix chars flying outward
-          const count = 7 + Math.floor(Math.random() * 5);
+          // Randomise explosion size: small (4 sparks) to medium (8 sparks)
+          const count = 4 + Math.floor(Math.random() * 5);
+          const maxSpd = 0.8 + Math.random() * 1.4; // overall scale varies per explosion
           for (let k = 0; k < count; k++) {
-            const angle = (Math.PI * 2 * k / count) + (Math.random() - 0.5) * 0.6;
-            const spd   = 1.2 + Math.random() * 2.8;
+            const angle = (Math.PI * 2 * k / count) + (Math.random() - 0.5) * 0.8;
+            const spd   = (0.4 + Math.random()) * maxSpd;
+            const sz    = 10 + Math.floor(Math.random() * 8); // font size varies per spark
             sparks.push({
               x, y,
               vx: Math.cos(angle) * spd,
-              vy: Math.sin(angle) * spd - 1.0, // slight upward bias
-              life: 0.8 + Math.random() * 0.4,
+              vy: Math.sin(angle) * spd - 0.6, // mild upward bias
+              life: 0.7 + Math.random() * 0.4,
               ch: rndChar(),
-              white: Math.random() < 0.35,
+              sz,
             });
           }
-          // Expanding ring
-          rings.push({ x, y, radius: 2, life: 1.0 });
+          // Small ring, size varies
+          const ringScale = 0.5 + Math.random() * 0.7;
+          rings.push({ x, y, radius: 1, maxR: fs * (1.5 + Math.random()), life: 1.0, scale: ringScale });
         };
 
         let raf;
@@ -690,36 +714,29 @@
             }
           });
 
-          // ── Draw explosion rings ────────────────────────────────
+          // ── Draw explosion rings (fire-coloured) ───────────────
           rings = rings.filter(r => r.life > 0);
           rings.forEach(r => {
-            r.radius += 3.2;
-            r.life   -= 0.045;
+            r.radius += 2.0 * r.scale;
+            r.life   -= 0.06;
             const a = Math.max(0, r.life);
             ctx.beginPath();
             ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(100, 255, 120, ${a * 0.8})`;
-            ctx.lineWidth   = 1.5 * a + 0.5;
+            ctx.strokeStyle = fireColor(a);
+            ctx.lineWidth   = 1.2 * a + 0.3;
             ctx.stroke();
           });
 
-          // ── Draw spark particles ────────────────────────────────
-          ctx.font = `${fs - 2}px monospace`;
+          // ── Draw spark particles (fire-coloured) ───────────────
           sparks = sparks.filter(sp => sp.life > 0);
           sparks.forEach(sp => {
             sp.x  += sp.vx;
             sp.y  += sp.vy;
-            sp.vy += 0.13;  // gravity
+            sp.vy += 0.10;  // gravity
             sp.vx *= 0.97;  // air drag
-            sp.life -= 0.038;
-            const a = Math.max(0, sp.life);
-            if (sp.white) {
-              ctx.fillStyle = `rgba(255, 255, 255, ${a})`;
-            } else {
-              // Transitions from bright green → dim green as life fades
-              const g = Math.floor(120 + 135 * a);
-              ctx.fillStyle = `rgba(0, ${g}, 30, ${a})`;
-            }
+            sp.life -= 0.045;
+            ctx.font = `${sp.sz}px monospace`;
+            ctx.fillStyle = fireColor(Math.max(0, sp.life));
             ctx.fillText(sp.ch, sp.x, sp.y);
           });
           ctx.font = `${fs}px monospace`; // restore
