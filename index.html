@@ -758,6 +758,18 @@
               }}>{label}</span>
             ))}
           </div>
+          {/* Workshop URL */}
+          <div style={{
+            opacity: showMeta ? 1 : 0,
+            transition: 'opacity 0.5s ease 0.3s',
+            marginTop: 18,
+            color: MUTED,
+            fontSize: 'clamp(12px, 1.1vw, 15px)',
+            fontFamily: 'monospace',
+            letterSpacing: '0.03em',
+          }}>
+            kevin-marzec-ssg.github.io/claude-code-workshop/
+          </div>
         </div>
       );
     }
