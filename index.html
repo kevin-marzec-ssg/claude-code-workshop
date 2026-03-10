@@ -332,38 +332,32 @@
 
     // ─── Shared Components ─────────────────────────────────────────────────────
 
-    function Tag({ children }) {
-      return (
-        <span style={{
-          background: "#D9770622",
-          color: ACCENT,
-          border: `1px solid ${ACCENT}44`,
-          borderRadius: 6,
-          fontSize: "clamp(12px, 1vw, 15px)",
-          fontWeight: 700,
-          padding: "3px 12px",
-          letterSpacing: 1,
-        }}>
-          {children}
-        </span>
-      );
-    }
+    const TAG_STYLE = {
+      background: "#D9770622",
+      color: ACCENT,
+      border: `1px solid ${ACCENT}44`,
+      borderRadius: 6,
+      fontSize: "clamp(12px, 1vw, 15px)",
+      fontWeight: 700,
+      padding: "3px 12px",
+      letterSpacing: 1,
+    };
+    const Tag = React.memo(function Tag({ children }) {
+      return <span style={TAG_STYLE}>{children}</span>;
+    });
 
-    function TipBox({ children }) {
-      return (
-        <div style={{
-          background: "#D9770611",
-          border: `1px solid ${ACCENT}44`,
-          borderRadius: 8,
-          padding: "clamp(8px, 1vw, 12px) clamp(12px, 1.2vw, 16px)",
-          fontSize: "clamp(13px, 1.1vw, 16px)",
-          color: ACCENT,
-          marginTop: 10,
-        }}>
-          {children}
-        </div>
-      );
-    }
+    const TIPBOX_STYLE = {
+      background: "#D9770611",
+      border: `1px solid ${ACCENT}44`,
+      borderRadius: 8,
+      padding: "clamp(8px, 1vw, 12px) clamp(12px, 1.2vw, 16px)",
+      fontSize: "clamp(13px, 1.1vw, 16px)",
+      color: ACCENT,
+      marginTop: 10,
+    };
+    const TipBox = React.memo(function TipBox({ children }) {
+      return <div style={TIPBOX_STYLE}>{children}</div>;
+    });
 
     // ─── Slide Components ──────────────────────────────────────────────────────
 
@@ -774,7 +768,7 @@
       );
     }
 
-    function TitleBackground() {
+    const TitleBackground = React.memo(function TitleBackground() {
       const canvasRef = useRef(null);
 
       useEffect(() => {
@@ -782,9 +776,35 @@
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
+        const dpr = window.devicePixelRatio || 1;
+        let W, H;
+        let scanlineCanvas = null;
+        let cachedH1 = null;
         const resize = () => {
-          canvas.width = canvas.offsetWidth;
-          canvas.height = canvas.offsetHeight;
+          W = canvas.offsetWidth;
+          H = canvas.offsetHeight;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          // Pre-render scanlines to offscreen canvas
+          scanlineCanvas = document.createElement('canvas');
+          scanlineCanvas.width = W * dpr;
+          scanlineCanvas.height = H * dpr;
+          const sctx = scanlineCanvas.getContext('2d');
+          sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          sctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
+          for (let y = 0; y < H; y += 3) {
+            sctx.fillRect(0, y, W, 1);
+          }
+          // Recalculate columns on resize (skipped on initial call before streams exist)
+          if (typeof cols !== 'undefined' && streams) {
+            cols = Math.floor(W / fs);
+            while (streams.length < cols) {
+              const len = 8 + Math.floor(Math.random() * 20);
+              streams.push({ y: Math.random() * -(len + 10), speed: 0.15 + Math.random() * 0.33, len, chars: Array.from({ length: len }, rndChar) });
+            }
+            streams.length = cols;
+          }
         };
         resize();
         window.addEventListener('resize', resize);
@@ -794,7 +814,7 @@
         // Half-width katakana (closest to what the film uses) + digits + symbols
         const rainChars = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ012345789Z:・.=*+-<>'.split('');
         const rndChar = () => rainChars[Math.floor(Math.random() * rainChars.length)];
-        let cols = Math.floor(canvas.width / fs);
+        let cols = Math.floor(W / fs);
         let streams = Array.from({ length: cols }, () => {
           const len = 8 + Math.floor(Math.random() * 20);
           return { y: Math.random() * -(len + 10), speed: 0.15 + Math.random() * 0.33, len, chars: Array.from({ length: len }, rndChar) };
@@ -820,9 +840,10 @@
 
         const NUM_P = 55;
         const CONNECT_DIST = 150;
+        const CONNECT_DIST_SQ = CONNECT_DIST * CONNECT_DIST;
         const pts = Array.from({ length: NUM_P }, (_, idx) => ({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
+          x: Math.random() * W,
+          y: Math.random() * H,
           vx: (Math.random() - 0.5) * 0.5,
           vy: (Math.random() - 0.5) * 0.5,
           r: 1.8 * Math.pow(7, Math.random()), // power law: 1.8→12.6, most small, few large
@@ -900,7 +921,7 @@
         const onClick = e => {
           const cr = canvas.getBoundingClientRect();
           const cx = e.clientX - cr.left, cy = e.clientY - cr.top;
-          shockwaves.push({ x: cx, y: cy, radius: 0, life: 1.0, maxR: Math.max(canvas.width, canvas.height) * 0.55 });
+          shockwaves.push({ x: cx, y: cy, radius: 0, life: 1.0, maxR: Math.max(W, H) * 0.55 });
           // Blast nearby particles outward
           pts.forEach(p => {
             const dx = p.x - cx, dy = p.y - cy;
@@ -918,14 +939,14 @@
         const draw = () => {
           // Solid clear each frame — rain handles its own fading per character
           ctx.fillStyle = 'rgba(13, 17, 30, 0.92)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillRect(0, 0, W, H);
 
           // Collision bounds — recalculate each frame (text may resize)
           let titleBounds = null;
-          const h1El = canvas.parentElement && canvas.parentElement.querySelector('[data-title-h1]');
-          if (h1El) {
+          if (!cachedH1) cachedH1 = canvas.parentElement && canvas.parentElement.querySelector('[data-title-h1]');
+          if (cachedH1) {
             const cr = canvas.getBoundingClientRect();
-            const hr = h1El.getBoundingClientRect();
+            const hr = cachedH1.getBoundingClientRect();
             titleBounds = { x: hr.left - cr.left, y: hr.top - cr.top, w: hr.width, h: hr.height };
           }
 
@@ -966,7 +987,7 @@
             s.chars.forEach((ch, i) => {
               const row = Math.floor(s.y) - i;
               const py  = row * fs;
-              if (py < -fs || py > canvas.height) return;
+              if (py < -fs || py > H) return;
               const x = col * fs;
 
               // Mouse wipe: per-character displacement based on proximity to cursor
@@ -1001,7 +1022,7 @@
             });
 
             // Natural scroll-off reset
-            if ((Math.floor(s.y) - s.len) * fs > canvas.height) {
+            if ((Math.floor(s.y) - s.len) * fs > H) {
               s.y     = Math.random() * -15;
               s.speed = 0.15 + Math.random() * 0.33;
               s.len   = 8 + Math.floor(Math.random() * 20);
@@ -1011,7 +1032,11 @@
           });
 
           // ── Draw shockwaves ─────────────────────────────────────
-          shockwaves = shockwaves.filter(sw => sw.life > 0);
+          { let w = 0;
+          for (let ri = 0; ri < shockwaves.length; ri++) {
+            if (shockwaves[ri].life > 0) shockwaves[w++] = shockwaves[ri];
+          }
+          shockwaves.length = w; }
           shockwaves.forEach(sw => {
             sw.radius += sw.maxR * 0.035;
             sw.life -= 0.032;
@@ -1030,22 +1055,32 @@
               ctx.lineWidth = 1;
               ctx.stroke();
             }
-            // Displace nearby rain chars via shockwave radius
-            streams.forEach((s, col) => {
-              s.chars.forEach((_, i) => {
-                const py = (Math.floor(s.y) - i) * fs;
-                const cx2 = col * fs, d = Math.hypot(cx2 - sw.x, py - sw.y);
+            // Displace nearby rain chars — column-range pre-filter
+            const swColMin = Math.max(0, Math.floor((sw.x - sw.radius - fs * 2) / fs));
+            const swColMax = Math.min(cols - 1, Math.ceil((sw.x + sw.radius + fs * 2) / fs));
+            for (let col = swColMin; col <= swColMax; col++) {
+              const st = streams[col];
+              if (!st) continue;
+              const cx2 = col * fs;
+              st.chars.forEach((_, i) => {
+                const py = (Math.floor(st.y) - i) * fs;
+                const dx = cx2 - sw.x, dy = py - sw.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
                 const edge = sw.radius;
                 if (Math.abs(d - edge) < fs * 2) {
                   const push = (1 - Math.abs(d - edge) / (fs * 2)) * a * fs * 3;
-                  s._shockX = (s._shockX || 0) + (cx2 - sw.x) / (d || 1) * push;
+                  st._shockX = (st._shockX || 0) + dx / (d || 1) * push;
                 }
               });
-            });
+            }
           });
 
           // ── Draw explosion rings (fire-coloured) ───────────────
-          rings = rings.filter(r => r.life > 0);
+          { let w = 0;
+          for (let ri = 0; ri < rings.length; ri++) {
+            if (rings[ri].life > 0) rings[w++] = rings[ri];
+          }
+          rings.length = w; }
           rings.forEach(r => {
             r.radius += 2.0 * r.scale;
             r.life   -= 0.06;
@@ -1058,7 +1093,11 @@
           });
 
           // ── Draw spark particles (fire-coloured) ───────────────
-          sparks = sparks.filter(sp => sp.life > 0);
+          { let w = 0;
+          for (let ri = 0; ri < sparks.length; ri++) {
+            if (sparks[ri].life > 0) sparks[w++] = sparks[ri];
+          }
+          sparks.length = w; }
           sparks.forEach(sp => {
             sp.x  += sp.vx;
             sp.y  += sp.vy;
@@ -1075,8 +1114,10 @@
           pts.forEach((p, i) => {
             for (let j = i + 1; j < pts.length; j++) {
               const q = pts[j];
-              const d = Math.hypot(p.x - q.x, p.y - q.y);
-              if (d < CONNECT_DIST) {
+              const dx = p.x - q.x, dy = p.y - q.y;
+              const dSq = dx * dx + dy * dy;
+              if (dSq < CONNECT_DIST_SQ) {
+                const d = Math.sqrt(dSq);
                 const alpha = 0.65 * (1 - d / CONNECT_DIST);
                 const [r, g, b] = p.edgeColor;
                 ctx.beginPath();
@@ -1094,7 +1135,11 @@
           });
 
           // Draw data pulses
-          pulses = pulses.filter(pu => pu.t <= 1);
+          { let w = 0;
+          for (let ri = 0; ri < pulses.length; ri++) {
+            if (pulses[ri].t <= 1) pulses[w++] = pulses[ri];
+          }
+          pulses.length = w; }
           pulses.forEach(pu => {
             pu.t += pu.speed;
             const t = pu.t;
@@ -1117,8 +1162,9 @@
           pts.forEach(p => {
             // Mouse repel — push away when close, then damp the extra velocity
             const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
-            const md = Math.hypot(mdx, mdy);
-            if (md < 90 && md > 0) {
+            const mdSq = mdx * mdx + mdy * mdy;
+            if (mdSq < 8100 && mdSq > 0) {
+              const md = Math.sqrt(mdSq);
               const force = (90 - md) / 90 * 0.55;
               p.vx += (mdx / md) * force;
               p.vy += (mdy / md) * force;
@@ -1129,8 +1175,8 @@
             const spd = Math.hypot(p.vx, p.vy);
             if (spd > 2.5) { p.vx = p.vx / spd * 2.5; p.vy = p.vy / spd * 2.5; }
             p.x += p.vx; p.y += p.vy;
-            if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
-            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            if (p.x < 0 || p.x > W)  p.vx *= -1;
+            if (p.y < 0 || p.y > H) p.vy *= -1;
             p.pulse += 0.025;
 
             const r = p.r + Math.sin(p.pulse) * (p.r * 0.18); // pulse scales with node size
@@ -1141,7 +1187,11 @@
           });
 
           // ── Cursor trail ────────────────────────────────────────
-          cursorTrail = cursorTrail.filter(t => t.life > 0);
+          { let w = 0;
+          for (let ri = 0; ri < cursorTrail.length; ri++) {
+            if (cursorTrail[ri].life > 0) cursorTrail[w++] = cursorTrail[ri];
+          }
+          cursorTrail.length = w; }
           ctx.font = `${fs}px monospace`;
           cursorTrail.forEach(t => {
             t.life -= 0.035;
@@ -1153,19 +1203,16 @@
 
           // ── Vignette ────────────────────────────────────────────
           const vg = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, canvas.height * 0.25,
-            canvas.width / 2, canvas.height / 2, canvas.height * 0.85,
+            W / 2, H / 2, H * 0.25,
+            W / 2, H / 2, H * 0.85,
           );
           vg.addColorStop(0, 'rgba(0,0,0,0)');
           vg.addColorStop(1, 'rgba(0,0,0,0.72)');
           ctx.fillStyle = vg;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillRect(0, 0, W, H);
 
-          // ── Scanlines ───────────────────────────────────────────
-          for (let y = 0; y < canvas.height; y += 3) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.10)';
-            ctx.fillRect(0, y, canvas.width, 1);
-          }
+          // ── Scanlines (pre-rendered) ────────────────────────────
+          if (scanlineCanvas) ctx.drawImage(scanlineCanvas, 0, 0, W, H);
 
           raf = requestAnimationFrame(draw);
         };
@@ -1180,9 +1227,9 @@
       }, []);
 
       return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 16 }} />;
-    }
+    });
 
-    function AgendaSlide({ s }) {
+    const AgendaSlide = React.memo(function AgendaSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 24px", fontWeight: 800 }}>
@@ -1214,9 +1261,9 @@
           </div>
         </div>
       );
-    }
+    });
 
-    function WhatSlide({ s }) {
+    const WhatSlide = React.memo(function WhatSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 8px", fontWeight: 800 }}>
@@ -1233,9 +1280,9 @@
           </div>
         </div>
       );
-    }
+    });
 
-    function ConceptSlide({ s }) {
+    const ConceptSlide = React.memo(function ConceptSlide({ s }) {
       return (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
@@ -1268,9 +1315,9 @@
           {s.tip && <TipBox>{s.tip}</TipBox>}
         </div>
       );
-    }
+    });
 
-    function ContextDeepSlide({ s }) {
+    const ContextDeepSlide = React.memo(function ContextDeepSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 4px", fontWeight: 800 }}>{s.title}</h2>
@@ -1323,9 +1370,9 @@
           <TipBox>{s.tip}</TipBox>
         </div>
       );
-    }
+    });
 
-    function SubagentsHowtoSlide({ s }) {
+    const SubagentsHowtoSlide = React.memo(function SubagentsHowtoSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 6px", fontWeight: 800 }}>{s.title}</h2>
@@ -1355,9 +1402,9 @@
           <TipBox>{s.tip}</TipBox>
         </div>
       );
-    }
+    });
 
-    function CustomSkillsSlide({ s }) {
+    const CustomSkillsSlide = React.memo(function CustomSkillsSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 6px", fontWeight: 800 }}>{s.title}</h2>
@@ -1402,9 +1449,9 @@
           <TipBox>{s.tip}</TipBox>
         </div>
       );
-    }
+    });
 
-    function TipsSlide({ s }) {
+    const TipsSlide = React.memo(function TipsSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 20px", fontWeight: 800 }}>{s.title}</h2>
@@ -1421,9 +1468,9 @@
           </div>
         </div>
       );
-    }
+    });
 
-    function InstallSlide({ s }) {
+    const InstallSlide = React.memo(function InstallSlide({ s }) {
       return (
         <div>
           <h2 style={{ color: "#fff", fontSize: "clamp(22px, 2.4vw, 34px)", margin: "0 0 6px", fontWeight: 800 }}>{s.title}</h2>
@@ -1448,9 +1495,9 @@
           </div>
         </div>
       );
-    }
+    });
 
-    function BuildSlide({ s }) {
+    const BuildSlide = React.memo(function BuildSlide({ s }) {
       return (
         <div style={{ textAlign: "center" }}>
           <h2 style={{ color: "#fff", fontSize: "clamp(24px, 2.8vw, 40px)", margin: "0 0 10px", fontWeight: 800 }}>{s.title}</h2>
@@ -1476,7 +1523,7 @@
           <Tag>Facilitators are here to help — just ask!</Tag>
         </div>
       );
-    }
+    });
 
     function SlideContent({ slide }) {
       if (slide.type === "title")         return <TitleSlide s={slide} />;
